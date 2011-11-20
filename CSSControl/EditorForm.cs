@@ -325,6 +325,7 @@ namespace CSSControl
                 bool inProperty = false;
                 bool inDeclare = false;
                 bool inComment = false;
+				bool inValue = false;
 				int startComment = -1;
                 String token = "";
 
@@ -337,12 +338,14 @@ namespace CSSControl
                         selectedIndex += token.Length;
                         continue;
                     }
+
                     if (token.StartsWith("/*") || token.Contains("/*"))
                     {
 						startComment = tokenIndex;
                         inComment = true;
                     } else if (token.Equals(";") && !inComment)
                     {
+						inValue = false;
                         inProperty = false;
                     }
                     else if (token.Equals("{") && !inComment)
@@ -352,23 +355,39 @@ namespace CSSControl
                     else if (token.Equals("}") && !inComment)
                     {
                         inDeclare = false;
-                    }
-                    else if (inComment && token.Contains("*/"))
-                    {
-						int closeComment = token.IndexOf("*/") +1;
-                        inComment = false;
+					} else if (inComment && token.Contains("*/")) {
+						int closeComment = token.IndexOf("*/") + 1;
+						inComment = false;
 						int commentLength = (selectedIndex - startComment) + closeComment;
-                        m_rtb.SelectionStart = startComment;
+						m_rtb.SelectionStart = startComment;
 						m_rtb.SelectionLength = commentLength;
-                        m_rtb.SelectionColor = Color.Green;
+						m_rtb.SelectionColor = Color.Green;
 						token = token.Substring(closeComment);
 						selectedIndex += closeComment;
-                    } else if(!inComment && token.Equals(":")) {
+					} else if (!inComment && token.Equals(":")) {
 						m_rtb.SelectionStart = selectedIndex;
 						m_rtb.SelectionLength = token.Length;
 						m_rtb.SelectionColor = Color.Black;
 						m_rtb.SelectedText = token;
 						inProperty = false;
+						inValue = true;
+					} else if (inValue) {
+						if (token.StartsWith("#")) { //hex colors only
+							Regex hexColorCheck = new Regex(@"(^[#][A-Fa-f0-9]{3}$|^[#][A-Fa-f0-9]{6}$)");
+							
+							if (hexColorCheck.IsMatch(token)) {
+								string colorToken = token;
+								if(token.Length == 4) { //a short 3 double color
+									colorToken = "#" + token[1] + token[1] + token[2] + token[2] + token[3] + token[3];
+								}
+								ColorConverter hexConvert = new ColorConverter();
+								Color hexColor = (Color) hexConvert.ConvertFromString(colorToken);
+								m_rtb.SelectionStart = selectedIndex;
+								m_rtb.SelectionLength = token.Length;
+								m_rtb.SelectionColor = hexColor;
+								m_rtb.SelectedText = token;
+							}
+						}
 					}
 
                     if (FormLanguage.tokenList.ContainsKey(token) && !inProperty) {
