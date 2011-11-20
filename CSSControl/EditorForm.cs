@@ -325,6 +325,7 @@ namespace CSSControl
                 bool inProperty = false;
                 bool inDeclare = false;
                 bool inComment = false;
+				int startComment = -1;
                 String token = "";
 
                 for (int tokenIndex = 0; tokenIndex < tokens.Count(); tokenIndex++)
@@ -338,6 +339,7 @@ namespace CSSControl
                     }
                     if (token.StartsWith("/*") || token.Contains("/*"))
                     {
+						startComment = tokenIndex;
                         inComment = true;
                     } else if (token.Equals(";") && !inComment)
                     {
@@ -351,35 +353,32 @@ namespace CSSControl
                     {
                         inDeclare = false;
                     }
-                    else if (inComment && token.StartsWith("*/"))
+                    else if (inComment && token.Contains("*/"))
                     {
+						int closeComment = token.IndexOf("*/") +1;
                         inComment = false;
-                        m_rtb.SelectionStart = selectedIndex;
-                        m_rtb.SelectionLength = 2;
+						int commentLength = (selectedIndex - startComment) + closeComment;
+                        m_rtb.SelectionStart = startComment;
+						m_rtb.SelectionLength = commentLength;
                         m_rtb.SelectionColor = Color.Green;
-                        token = token.Substring(2);
-                        selectedIndex += 2;
-                    }
+						token = token.Substring(closeComment);
+						selectedIndex += closeComment;
+                    } else if(!inComment && token.Equals(":")) {
+						m_rtb.SelectionStart = selectedIndex;
+						m_rtb.SelectionLength = token.Length;
+						m_rtb.SelectionColor = Color.Black;
+						m_rtb.SelectedText = token;
+						inProperty = false;
+					}
 
-                    if (inComment)
-                    {
-                        m_rtb.SelectionStart = selectedIndex;
-                        m_rtb.SelectionLength = token.Length;
-                        m_rtb.SelectionColor = Color.Green;
-                    } else {
-                        foreach (SyntaxToken keyword in FormLanguage.tokenList)
-                        {
-                            if (keyword.Text == token && !inProperty)
-                            {
-                                m_rtb.SelectionStart = selectedIndex;
-                                m_rtb.SelectionLength = token.Length;
-                                m_rtb.SelectionColor = keyword.Color;
-                                m_rtb.SelectedText = token;
-                                inProperty = true;
-                                break;
-                            }
-                        }
-                    }
+                    if (FormLanguage.tokenList.ContainsKey(token) && !inProperty) {
+						SyntaxToken keyword = (SyntaxToken)FormLanguage.tokenList[token];
+						m_rtb.SelectionStart = selectedIndex;
+						m_rtb.SelectionLength = token.Length;
+						m_rtb.SelectionColor = keyword.Color;
+						m_rtb.SelectedText = token;
+						inProperty = true;
+					}
                     selectedIndex += token.Length;
 
                     if (selectedIndex >= endingIndex) break;
