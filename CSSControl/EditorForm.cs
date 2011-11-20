@@ -213,7 +213,8 @@ namespace CSSControl
             }
             else if (e.KeyCode == Keys.OemSemicolon && e.Modifiers == Keys.Shift
                 || e.KeyCode == Keys.Space
-                || e.KeyCode == Keys.Tab)
+                || e.KeyCode == Keys.Tab
+				|| e.KeyCode == Keys.OemSemicolon)
             {
                 RichTextBox currentTextBox = (RichTextBox)editControl.SelectedTab.Controls[0];
                 RichTextBox lineNumbers = (RichTextBox)editControl.SelectedTab.Controls[1];
