@@ -117,6 +117,11 @@ namespace CSSControl
             RichTextBox lineNumbers = (RichTextBox)editControl.SelectedTab.Controls[1];
 
             UpdateLineNumbers(lineNumbers, editBox);
+
+			int topIndex = editBox.GetCharIndexFromPosition(new Point(1, 1));
+			int bottomIndex = editBox.GetCharIndexFromPosition(new Point(editBox.Width, editBox.Height - 1));
+			ParseLine(editBox.Text, editBox, topIndex, bottomIndex);
+			editBox.Invalidate();
         }
 
         void newPage_SizeChanged(object sender, EventArgs e)
@@ -222,6 +227,7 @@ namespace CSSControl
                 int firstChar = currentTextBox.GetFirstCharIndexOfCurrentLine();
                 int currentLine = currentTextBox.GetLineFromCharIndex(firstChar);
                 ParseLine(currentTextBox.Text, currentTextBox, firstChar, currentTextBox.Lines[currentLine].Length + firstChar);
+				currentTextBox.Invalidate();
             }
         }
 
@@ -303,8 +309,12 @@ namespace CSSControl
         void ParseLine(string line, RichTextBox m_rtb, int startIndex = 0, int endIndex = 0)
         {
             if (line.Trim().Length < 1 && endIndex <= startIndex) return;
+
+			m_rtb.VScroll -= new EventHandler(newEditor_VScroll);
+			m_rtb.TextChanged -= new EventHandler(newEditor_TextChanged);
             int startCursor = m_rtb.SelectionStart;
             IntPtr eventMask = IntPtr.Zero;
+			Point ScrollPoint = GetScrollPos(m_rtb.Handle);
 
             try
             {
@@ -313,6 +323,7 @@ namespace CSSControl
                 SendMessage(m_rtb.Handle, WM_SETREDRAW, 0, IntPtr.Zero);
                 // Stop sending of events:
                 eventMask = SendMessage(m_rtb.Handle, EM_GETEVENTMASK, 0, IntPtr.Zero);
+				
 
                 Regex r = new Regex("([ \\n\\t{}:;])");
 
@@ -342,9 +353,18 @@ namespace CSSControl
 
                     if (token.StartsWith("/*") || token.Contains("/*"))
                     {
-						startComment = tokenIndex;
+						startComment = selectedIndex;
                         inComment = true;
-                    } else if (token.Equals(";") && !inComment)
+                    } else if (inComment && token.Contains("*/")) {
+						int closeComment = token.IndexOf("*/") + 1;
+						inComment = false;
+						int commentLength = (selectedIndex - startComment) + closeComment;
+						m_rtb.SelectionStart = startComment;
+						m_rtb.SelectionLength = commentLength;
+						m_rtb.SelectionColor = Color.Green;
+						token = token.Substring(closeComment);
+						selectedIndex += closeComment;
+					} else if (token.Equals(";") && !inComment)
                     {
 						inValue = false;
                         inProperty = false;
@@ -356,15 +376,6 @@ namespace CSSControl
                     else if (token.Equals("}") && !inComment)
                     {
                         inDeclare = false;
-					} else if (inComment && token.Contains("*/")) {
-						int closeComment = token.IndexOf("*/") + 1;
-						inComment = false;
-						int commentLength = (selectedIndex - startComment) + closeComment;
-						m_rtb.SelectionStart = startComment;
-						m_rtb.SelectionLength = commentLength;
-						m_rtb.SelectionColor = Color.Green;
-						token = token.Substring(closeComment);
-						selectedIndex += closeComment;
 					} else if (!inComment && token.Equals(":")) {
 						m_rtb.SelectionStart = selectedIndex;
 						m_rtb.SelectionLength = token.Length;
@@ -372,7 +383,7 @@ namespace CSSControl
 						m_rtb.SelectedText = token;
 						inProperty = false;
 						inValue = true;
-					} else if (inValue) {
+					} else if (inValue && !inComment) {
 						if (token.StartsWith("#")) { //hex colors only
 							Regex hexColorCheck = new Regex(@"(^[#][A-Fa-f0-9]{3}$|^[#][A-Fa-f0-9]{6}$)");
 							
@@ -389,9 +400,7 @@ namespace CSSControl
 								m_rtb.SelectedText = token;
 							}
 						}
-					}
-
-                    if (FormLanguage.tokenList.ContainsKey(token) && !inProperty) {
+					} else if (FormLanguage.tokenList.ContainsKey(token) && !inProperty && !inComment) {
 						SyntaxToken keyword = (SyntaxToken)FormLanguage.tokenList[token];
 						m_rtb.SelectionStart = selectedIndex;
 						m_rtb.SelectionLength = token.Length;
@@ -409,6 +418,7 @@ namespace CSSControl
 
                 m_rtb.SelectionStart = endIndex;
                 m_rtb.SelectionColor = Color.Black;
+				
                 // turn on events
                 SendMessage(m_rtb.Handle, EM_SETEVENTMASK, 0, eventMask);
                 // turn on redrawing
@@ -418,6 +428,10 @@ namespace CSSControl
                 m_rtb.SelectionLength = 0;
                 m_rtb.ResumeLayout();
             }
+
+			SetScrollPos(ScrollPoint, m_rtb.Handle);
+			m_rtb.VScroll += new EventHandler(newEditor_VScroll);
+			m_rtb.TextChanged += new EventHandler(newEditor_TextChanged);
         } 
 
         private String currentCssText()
@@ -555,5 +569,22 @@ namespace CSSControl
                 }
             }
         }
+
+		public const int EM_GETSCROLLPOS = (WM_USER + 221);
+		public const int EM_SETSCROLLPOS = (WM_USER + 222);
+
+		private unsafe Point GetScrollPos(IntPtr Handle)
+		{
+			Point ScrollPos = new Point();
+			IntPtr ScrollPosPtr = new IntPtr(&ScrollPos);
+			SendMessage(Handle, EM_GETSCROLLPOS, 0, ScrollPosPtr);
+			return ScrollPos;
+		}
+
+		private unsafe void SetScrollPos(Point position, IntPtr Handle)
+		{
+			IntPtr ScrollPosPtr = new IntPtr(&position);
+			SendMessage(Handle, EM_SETSCROLLPOS, 0, ScrollPosPtr);
+		}
     }
 }
