@@ -74,6 +74,7 @@ namespace CSSControl
             newEditor.Text = Contents;
             newEditor.TextChanged += new EventHandler(newEditor_TextChanged);
             newEditor.KeyDown += new KeyEventHandler(newEditor_KeyDown);
+			newEditor.KeyUp += new KeyEventHandler(newEditor_KeyUp);
             newEditor.VScroll += new EventHandler(newEditor_VScroll);
            // newEditor.Dock = DockStyle.Right;
             newEditor.Width = editControl.Width - 40;
@@ -107,9 +108,14 @@ namespace CSSControl
             lineNumbers.Width = 40;
             lineNumbers.Height = newPage.Height;
 
+			UpdateLineNumbers(lineNumbers, newEditor);
             newPage.SizeChanged += new EventHandler(newPage_SizeChanged);
             return newFile.index;
         }
+
+		void newEditor_KeyUp(object sender, KeyEventArgs e)
+		{
+		}
 
         void newEditor_VScroll(object sender, EventArgs e)
         {
@@ -189,6 +195,12 @@ namespace CSSControl
             return count;
         }
 
+		[DllImport("user32.dll", EntryPoint = "ShowCaret")]
+		public static extern long ShowCaret(IntPtr hwnd);
+
+		[DllImport("user32.dll", EntryPoint = "HideCaret")]
+		public static extern long HideCaret(IntPtr hwnd);
+
         void newEditor_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.V && e.Modifiers == Keys.Control)
@@ -205,17 +217,6 @@ namespace CSSControl
 
                 UpdateLineNumbers(lineNumbers, currentTextBox);
             }
-            else if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return)
-            {
-                RichTextBox currentTextBox = (RichTextBox)editControl.SelectedTab.Controls[0];
-                RichTextBox lineNumbers = (RichTextBox)editControl.SelectedTab.Controls[1];
-
-                int firstChar = currentTextBox.GetFirstCharIndexOfCurrentLine();
-                int currentLine = currentTextBox.GetLineFromCharIndex(firstChar);
-                ParseLine(currentTextBox.Text, currentTextBox, firstChar, currentTextBox.Lines[currentLine].Length + firstChar);
-
-                UpdateLineNumbers(lineNumbers, currentTextBox);
-            }
             else if (e.KeyCode == Keys.OemSemicolon && e.Modifiers == Keys.Shift
                 || e.KeyCode == Keys.Space
                 || e.KeyCode == Keys.Tab
@@ -228,7 +229,42 @@ namespace CSSControl
                 int currentLine = currentTextBox.GetLineFromCharIndex(firstChar);
                 ParseLine(currentTextBox.Text, currentTextBox, firstChar, currentTextBox.Lines[currentLine].Length + firstChar);
 				currentTextBox.Invalidate();
-            }
+			} else if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return) {
+				RichTextBox currentTextBox = (RichTextBox)editControl.SelectedTab.Controls[0];
+				RichTextBox lineNumbers = (RichTextBox)editControl.SelectedTab.Controls[1];
+
+				//Off hand I can't see this being important to have
+				/* int firstChar = currentTextBox.GetFirstCharIndexOfCurrentLine();
+				 int currentLine = currentTextBox.GetLineFromCharIndex(firstChar);
+				 ParseLine(currentTextBox.Text, currentTextBox, firstChar, currentTextBox.Lines[currentLine].Length + firstChar);
+				 */
+				int previousLine = currentTextBox.GetLineFromCharIndex(currentTextBox.GetFirstCharIndexOfCurrentLine());
+				int currentLine = previousLine + 1;
+				
+
+
+				if (previousLine < currentTextBox.Lines.Length && previousLine >= 0) {
+					//get the format from the previous line
+					Match hasWhiteSpace = Regex.Match(currentTextBox.Lines[previousLine], @"^[\s]+");
+
+					if (hasWhiteSpace.Success) {
+						string beginning = hasWhiteSpace.Groups[0].Value;
+						int charFromLine = currentTextBox.GetFirstCharIndexFromLine(currentLine);
+
+						currentTextBox.SelectionStart = charFromLine;
+						currentTextBox.SelectionLength = 0;
+						currentTextBox.SelectedText = beginning +"\n";
+
+						//This event is suppressed so we can insert the newline where we need it
+						e.SuppressKeyPress = true;
+
+						currentTextBox.SelectionStart = charFromLine + beginning.Length;
+					}
+				}
+				UpdateLineNumbers(lineNumbers, currentTextBox);
+
+				
+			}
         }
 
         public void newEditor(string fileName, string Contents,string overRideLocation)
