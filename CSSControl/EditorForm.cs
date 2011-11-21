@@ -264,6 +264,16 @@ namespace CSSControl
 				UpdateLineNumbers(lineNumbers, currentTextBox);
 
 				
+			} else if(e.Modifiers == Keys.Control && (e.KeyCode == Keys.G || e.KeyCode == Keys.L)) {
+				RichTextBox currentTextBox = (RichTextBox)editControl.SelectedTab.Controls[0];
+				//we use +1 to convert index to line
+				LineNumber lineBox = new LineNumber(1, currentTextBox.Lines.Length, currentTextBox.GetLineFromCharIndex(currentTextBox.GetFirstCharIndexOfCurrentLine())+1);
+
+				if (lineBox.ShowDialog(this) == System.Windows.Forms.DialogResult.OK) {
+					currentTextBox.SelectionStart = currentTextBox.GetFirstCharIndexFromLine(lineBox.LineChangeTo);
+				}
+
+				lineBox.Close();
 			}
         }
 
