@@ -78,6 +78,12 @@
     <Compile Include="LineNumber.Designer.cs">
       <DependentUpon>LineNumber.cs</DependentUpon>
     </Compile>
+    <Compile Include="Options.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Options.Designer.cs">
+      <DependentUpon>Options.cs</DependentUpon>
+    </Compile>
     <Compile Include="PreviewForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -92,6 +98,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="LineNumber.resx">
       <DependentUpon>LineNumber.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Options.resx">
+      <DependentUpon>Options.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PreviewForm.resx">
       <DependentUpon>PreviewForm.cs</DependentUpon>

@@ -20,6 +20,10 @@ namespace CSSControl
         private const int WM_USER = 0x400;
         private const int EM_GETEVENTMASK = (WM_USER + 59);
         private const int EM_SETEVENTMASK = (WM_USER + 69);
+		public int browserIndex;
+		public int futureBrowserIndex;
+		public string browserString;
+
 
         [DllImport("user32", CharSet = CharSet.Auto)]
         private extern static IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
@@ -34,18 +38,48 @@ namespace CSSControl
 
         public EditorForm()
         {
-            //TODO: move this to setup and get removed on uninstall
-
-           /* Microsoft.Win32.RegistryKey key;
-            key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey("Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION");
-            key.SetValue(Path.GetFileName(Application.ExecutablePath), 0x22B8);
-            key.Close();*/
-
             FormLanguage = new CssLanguage();
             InitializeComponent();
             editControl.TabPages.Clear();
             untited = 1;
             newEditor("");
+
+			futureBrowserIndex = -1;
+			Microsoft.Win32.RegistryKey editKey;
+			editKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION");
+			try {
+				int currentValue;
+				string currentStringValue = editKey.GetValue(System.Diagnostics.Process.GetCurrentProcess().MainModule.ModuleName).ToString();
+				int.TryParse(currentStringValue, out currentValue);
+
+				switch (currentValue) {
+					case 7000:
+						browserIndex = 0;
+						browserString = "IE7";
+						break;
+					case 8000:
+						browserIndex = 1;
+						browserString = "IE8 ";
+						break;
+					case 8888:
+						browserIndex = 2;
+						browserString = "IE8 (forced standards mode)";
+						break;
+					case 9000:
+						browserIndex = 3;
+						browserString = "IE9";
+						break;
+					case 9999:
+						browserIndex = 4;
+						browserString = "IE9 (forced standards mode)";
+						break;
+				}
+			} catch { //ie 7 is the normal system default
+				browserIndex = 0;
+				browserString = "IE7";
+			} finally {
+				editKey.Close();
+			}
         }
 
         private void previewToolStripMenuItem_Click(object sender, EventArgs e)
@@ -631,6 +665,13 @@ namespace CSSControl
 		{
 			IntPtr ScrollPosPtr = new IntPtr(&position);
 			SendMessage(Handle, EM_SETSCROLLPOS, 0, ScrollPosPtr);
+		}
+
+		private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			Options optionsForm = new Options(this);
+
+			optionsForm.ShowDialog();
 		}
     }
 }

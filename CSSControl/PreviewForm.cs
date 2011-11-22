@@ -20,8 +20,37 @@ namespace CSSControl
         public PreviewForm()
         {
             InitializeComponent();
-            webStartHeight = webPreview.Top;
-            webUrl.Text = "http://tailormadeprinting.com";
+			//TODO: check for install of ie 9.. maybe 8?
+			Microsoft.Win32.RegistryKey editKey;
+			editKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION");
+			try {
+				int currentValue;
+				string currentStringValue = editKey.GetValue(System.Diagnostics.Process.GetCurrentProcess().MainModule.ModuleName).ToString();
+				int.TryParse(currentStringValue, out currentValue);
+
+				switch (currentValue) {
+					case 7000:
+						iE7ToolStripMenuItem.Checked = true;
+						break;
+					case 8000:
+						iE8ToolStripMenuItem.Checked = true;
+						break;
+					case 8888:
+						iE8ForceStandardsModeToolStripMenuItem.Checked = true;
+						break;
+					case 9000:
+						iE9ToolStripMenuItem.Checked = true;
+						break;
+					case 9999:
+						iE9ForceStandardsModeToolStripMenuItem.Checked = true;
+						break;
+				}
+			} catch { //ie 7 is the normal system default
+				iE7ToolStripMenuItem.Checked = true;
+			} finally {
+				editKey.Close();
+			}
+
         }
 
         private void PreviewForm_SizeChanged(object sender, EventArgs e)
@@ -190,5 +219,79 @@ namespace CSSControl
         private void webUrl_KeyPress(object sender, KeyPressEventArgs e)
         {
         }
+
+		private void iE7ToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ToolStripMenuItem currentItem = (ToolStripMenuItem)sender;
+
+			foreach (ToolStripMenuItem item in currentItem.GetCurrentParent().Items) {
+				if (item != currentItem) {
+					item.Checked = false;
+				}
+			}
+
+			setIeMode(7000);
+		}
+
+		private void iE8ToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ToolStripMenuItem currentItem = (ToolStripMenuItem)sender;
+
+			foreach (ToolStripMenuItem item in currentItem.GetCurrentParent().Items) {
+				if (item != currentItem) {
+					item.Checked = false;
+				}
+			}
+
+			
+			setIeMode(8000);
+		}
+
+		private void iE8ForceStandardsModeToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ToolStripMenuItem currentItem = (ToolStripMenuItem)sender;
+
+			foreach (ToolStripMenuItem item in currentItem.GetCurrentParent().Items) {
+				if (item != currentItem) {
+					item.Checked = false;
+				}
+			}
+
+			setIeMode(8888);
+		}
+
+		private void iE9ToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ToolStripMenuItem currentItem = (ToolStripMenuItem)sender;
+
+			foreach (ToolStripMenuItem item in currentItem.GetCurrentParent().Items) {
+				if (item != currentItem) {
+					item.Checked = false;
+				}
+			}
+
+			setIeMode(9000);
+		}
+
+		private void iE9ForceStandardsModeToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			ToolStripMenuItem currentItem = (ToolStripMenuItem)sender;
+
+			foreach (ToolStripMenuItem item in currentItem.GetCurrentParent().Items) {
+				if (item != currentItem) {
+					item.Checked = false;
+				}
+			}
+
+			setIeMode(9999);
+		}
+
+		private void setIeMode(int modeNumber)
+		{
+			Microsoft.Win32.RegistryKey editKey;
+			editKey = Microsoft.Win32.Registry.LocalMachine.CreateSubKey("Software\\Microsoft\\Internet Explorer\\Main\\FeatureControl\\FEATURE_BROWSER_EMULATION");
+			editKey.SetValue(System.Diagnostics.Process.GetCurrentProcess().MainModule.ModuleName, modeNumber, Microsoft.Win32.RegistryValueKind.DWord);
+			editKey.Close();
+		}
     }
 }
