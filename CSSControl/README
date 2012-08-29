@@ -1,0 +1,4 @@
+About
+CSSControl is an application that allows a user to edit the css of a webpage in read time. It is an editor with Syntax Highlighting. It uses the WebBrowser control but uses the Windows registry values to set the browser version, so with some tweaks this program might work on linux. In its current form it only works on Windows XP/Vista/7 (Probably 8 too). In short the user can open a file or browser a web site and apply the CSS to any web site. This application is meant to do for Windows for what CSSEdit does for Mac Users. This application I would say is in about beta 1 ATM. Further progress may or may not be made. Feel free to hack around it and use it for your own needs.
+
+
